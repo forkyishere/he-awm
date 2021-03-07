@@ -15,7 +15,7 @@ Review the script contents and modify at your leasure any initial status or thre
 ```
 
 ## How to stop
-Ctrl+C or kill the pid from the script (use `ps -ef | grep he_auto_witness_node.sh` to find it)
+Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it)
 
 ## Features
  - Blockchain sync detection via `node_app.log` output
