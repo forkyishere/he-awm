@@ -8,10 +8,10 @@ Will get better over time.
 ## `he_awm.sh`
 Executable bash script that runs on the same folder of the HIVE-Engine witness code.
 
-## How start
+## How to start
 Review the script contents and modify at your leasure any initial status or thresholds. Then simply execute the script:
 ```
-[your_hive_engine_witness_folder]> ./he_auto_witness_node.sh
+[your_hive_engine_witness_folder]> ./he_awm.sh
 ```
 
 ## How to stop
