@@ -5,8 +5,16 @@ This is a bash script to automate the Hive-Engine Witness node registration stat
 Still very early Alpha kind of stuff, so treat it accordantly.
 Will get better over time.
 
+## Disclaimer
+This script needs to be (potentially) modified if the Hive-Engine code changes, therefore always double check the `Optimised for:` comment section inside the script.
+
 ## `he_awm.sh`
-Executable bash script that runs on the same folder of the HIVE-Engine witness code.
+Name of the executable bash script that runs on the same folder of the HIVE-Engine witness code.
+
+## Configurables
+Inside the script check the `Requirements` comment section and its variables. Adapting these to your node should be enought to get you going.
+
+In addition, if you would like to customise the state of which the script starts, change the variables under the `State variables` comment section to other initial states.
 
 ## How to start
 Review the script contents and modify at your leasure any initial status or thresholds. Then simply execute the script:
@@ -17,7 +25,7 @@ Review the script contents and modify at your leasure any initial status or thre
 ## How to stop
 Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it)
 
-## Features
+# Features
  - Blockchain sync detection via `node_app.log` output
  - Automatic register or unregister witness via stability of the node (blocks behind)
    1. Assumes 1 block behind as being acceptable as long there is no repetition (aka recovers quickly)
