@@ -2,8 +2,8 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/03/20
-# v1.1a
+# Date: 2021/03/27
+# v1.2
 
 ## Optimised for:
 # Hive-Engine 1.2.0
@@ -46,11 +46,11 @@ if [ -n "${WITNESS_INFO}" ]; then
 fi
 
 # Get number of blocks still missing from last streamer message
-BLOCKS_MISSING=`tail -n 333 ${NODE_APP_LOG} |grep Streamer |grep head_block_number | tail -n 1 | cut -d" " -f 12`
+BLOCKS_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | tail -n 1 | cut -d" " -f 12`
 
 # Search the log for X amount of streamer messages and count how many we were missing blocks
 # The bigger you set the tailed lines (-n) the higher number of messages you will get (higher requirements for being stable) 
-TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} |grep Streamer |grep head_block_number | grep -v "0\ blocks\ ahead"|wc -l`
+TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep -v "0\ blocks\ ahead"|wc -l`
 
 # Update time
 CURRENT_TIME=`date --iso-8601=seconds`
@@ -59,18 +59,18 @@ CURRENT_TIME=`date --iso-8601=seconds`
 if [ "${NODE_DOWN}" == "1" ]; then
 	echo "[${CURRENT_TIME}] Node is DOWN."
 	REGISTER="0"
-elif [ "${NODE_DOWN}" == "0" ]; then
+elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
 	# The order of the IFs matter!
         if [ "${TIMES_MISSING}" == "0" ] && [ "${BLOCKS_MISSING}" == "0" ]; then
                 # No missed blocks, therefore we can be sure to continue signing or register
                 echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is stable and in sync!"
                 REGISTER="1"
-	elif [ "${TIMES_MISSING}" == "1" ] || [ "${BLOCKS_MISSING}" == "1" ] || [ "${BLOCKS_MISSING}" == "0" ]; then
+	elif [ "${TIMES_MISSING}" == "1" ] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
 		# Let's assume for now that 1 block or one time behind is a evaluation zone (no decisions)
 		echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
 	else
                 # If there are more than one message with missing blocks and still out of sync, then indicate to unregister
-                echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is unstable with: ${BLOCKS_MISSING} blocks missing"
+                echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is unstable with: [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
                 REGISTER="0"
 	fi
 else
