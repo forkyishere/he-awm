@@ -65,8 +65,8 @@ elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
                 # No missed blocks, therefore we can be sure to continue signing or register
                 echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is stable and in sync!"
                 REGISTER="1"
-	elif [ "${TIMES_MISSING}" == "1" ] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
-		# Let's assume for now that 1 block or one time behind is a evaluation zone (no decisions)
+	elif [[ ( "${TIMES_MISSING}" == "1" ) || ( "${TIMES_MISSING}" == "2" ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
+		# Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
 		echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
 	else
                 # If there are more than one message with missing blocks and still out of sync, then indicate to unregister
