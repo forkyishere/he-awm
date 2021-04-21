@@ -39,10 +39,11 @@ CURRENT_ROUND=`tail -n 1000 ${NODE_APP_LOG} | grep P2P | grep currentRound | tai
 
 # Find any recent <Round> witness messages
 # (TODO) - use another method as tail generates repeated messages (adjust tail lines for repetition adjustment)
-WITNESS_INFO=`tail -n 200 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | tail -n 1`
+WITNESS_INFO[0]=`tail -n 500 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep scheduled | tail -n 1`
+WITNESS_INFO[1]=`tail -n 500 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep signed | tail -n 1`
 # Print if there is any message
-if [ -n "${WITNESS_INFO}" ]; then
-	echo ${WITNESS_INFO}
+if [ -n "${WITNESS_INFO[0]}" ]; then
+	echo ${WITNESS_INFO[@]}
 fi
 
 # Get number of blocks still missing from last streamer message
