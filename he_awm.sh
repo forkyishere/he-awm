@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/03/27
+# Date: 2021/04/21
 # v1.2
 
 ## Optimised for:
-# Hive-Engine 1.2.0
+# Hive-Engine 1.3.0
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -23,6 +23,12 @@ SIGNING_BLOCKS="0"
 REGISTER="0"
 # Represents the initial assumed state of the node when this script starts (1-Down, 0-Running)
 NODE_DOWN="1"
+
+# Timestamp format for script output
+timestamp_format ()
+{
+        echo "[`date --iso-8601=seconds`] "
+}
 
 # Main loop
 while [ true ]; do
@@ -64,31 +70,31 @@ elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
 	# The order of the IFs matter!
         if [ "${TIMES_MISSING}" == "0" ] && [ "${BLOCKS_MISSING}" == "0" ]; then
                 # No missed blocks, therefore we can be sure to continue signing or register
-                echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is stable and in sync!"
+                echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] - Node is stable and in sync!"
                 REGISTER="1"
 	elif [[ ( "${TIMES_MISSING}" == "1" ) || ( "${TIMES_MISSING}" == "2" ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
 		# Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
-		echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+		echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
 	else
                 # If there are more than one message with missing blocks and still out of sync, then indicate to unregister
-                echo "[${CURRENT_TIME}] Witness State[${SIGNING_BLOCKS}] - Node is unstable with: [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+                echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] - Node is unstable with: [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
                 REGISTER="0"
 	fi
 else
-	echo "["${CURRENT_TIME}"] Unknown error"
+	echo $(timestamp_format)"Unknown error"
 fi
 
 # (Un)Register witness depeding on signing status
 if [ "${SIGNING_BLOCKS}" == "0" ] && [ "${REGISTER}" == "1" ]; then
-	echo "[${CURRENT_TIME}] Registering Witness"
+	echo $(timestamp_format)"Registering Witness"
 	SIGNING_BLOCKS="1"
 	node witness_action.js register
-	echo "[${CURRENT_TIME}] Registration Broadcasted"
+	echo $(timestamp_format)"Registration Broadcasted"
 elif [ "${SIGNING_BLOCKS}" == "1" ] && [ "${REGISTER}" == "0" ]; then
-	echo "[${CURRENT_TIME}] Unregistering Witness"
+	echo $(timestamp_format)"Unregistering Witness"
 	SIGNING_BLOCKS="0"
 	node witness_action.js unregister
-	echo "[${CURRENT_TIME}] Unregistration Broadcasted"
+	echo $(timestamp_format)"Unregistration Broadcasted"
 fi
 
 # Scan frequency
