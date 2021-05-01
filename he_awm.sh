@@ -2,7 +2,7 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/04/21
+# Date: 2021/05/01
 # v1.2
 
 ## Optimised for:
@@ -33,7 +33,7 @@ timestamp_format ()
 # Main loop
 while [ true ]; do
 # Validate if node is down
-NODE_DOWN=`pm2 status ${PM2_NODE_NAME} |grep stopped|wc -l`
+NODE_DOWN=`pm2 status | grep ${PM2_NODE_NAME} | grep stopped|wc -l`
 
 # For the next two variables "BLOCKS_MISSING" and "TIMES_MISSING"
 # (TODO) - Fix the cases when logrotate starts a new file and there are no messages
@@ -45,7 +45,7 @@ CURRENT_ROUND=`tail -n 1000 ${NODE_APP_LOG} | grep P2P | grep currentRound | tai
 
 # Find any recent <Round> witness messages
 # (TODO) - use another method as tail generates repeated messages (adjust tail lines for repetition adjustment)
-WITNESS_INFO[0]=`tail -n 500 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep scheduled | tail -n 1`
+WITNESS_INFO[0]=`tail -n 1500 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep scheduled | tail -n 1`
 WITNESS_INFO[1]=`tail -n 500 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep signed | tail -n 1`
 # Print if there is any message
 if [ -n "${WITNESS_INFO[0]}" ]; then
