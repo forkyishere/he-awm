@@ -2,7 +2,7 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/05/01
+# Date: 2021/05/03
 # v1.2
 
 ## Optimised for:
@@ -33,7 +33,7 @@ timestamp_format ()
 # Main loop
 while [ true ]; do
 # Validate if node is down
-NODE_DOWN=`pm2 status | grep ${PM2_NODE_NAME} | grep stopped|wc -l`
+NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 
 # For the next two variables "BLOCKS_MISSING" and "TIMES_MISSING"
 # (TODO) - Fix the cases when logrotate starts a new file and there are no messages
