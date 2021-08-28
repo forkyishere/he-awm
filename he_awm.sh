@@ -3,7 +3,7 @@
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
 # Date: 2021/08/28
-# v1.2.1
+# v1.2.2
 
 ## Optimised for:
 # Hive-Engine 1.5.2+
@@ -32,6 +32,16 @@ timestamp_format ()
 
 # Main loop
 while [ true ]; do
+# Validate if node is down
+NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
+
+# If the node is up validate if there is enought log to make decisions, otherwise wait
+if [ "${NODE_DOWN}" == "0" ]; then
+	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ]; do
+		echo $(timestamp_format)"Waiting for log information..."
+		sleep 1
+	done
+fi
 
 # For the next two variables "BLOCKS_MISSING" and "TIMES_MISSING"
 # (TODO) - Fix the cases when logrotate starts a new file and there are no messages
@@ -65,7 +75,7 @@ TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_num
 # Update time
 CURRENT_TIME=`date --iso-8601=seconds`
 
-# Validate if node is down
+# Validate if node is down (again) to increase reaction due low IO log performance
 NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 
 # Validate sync status
