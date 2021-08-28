@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/05/03
-# v1.2
+# Date: 2021/08/28
+# v1.2.1
 
 ## Optimised for:
-# Hive-Engine 1.3.0
+# Hive-Engine 1.5.2+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -32,8 +32,6 @@ timestamp_format ()
 
 # Main loop
 while [ true ]; do
-# Validate if node is down
-NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 
 # For the next two variables "BLOCKS_MISSING" and "TIMES_MISSING"
 # (TODO) - Fix the cases when logrotate starts a new file and there are no messages
@@ -66,6 +64,9 @@ TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_num
 
 # Update time
 CURRENT_TIME=`date --iso-8601=seconds`
+
+# Validate if node is down
+NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 
 # Validate sync status
 if [ "${NODE_DOWN}" == "1" ]; then
