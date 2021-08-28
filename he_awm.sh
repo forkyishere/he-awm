@@ -21,8 +21,9 @@ PM2_NODE_NAME="prod-hivengwit"
 SIGNING_BLOCKS="0"
 # Represents the intention to register (1-Registering, 2-Unregistering)
 REGISTER="0"
-# Represents the initial assumed state of the node when this script starts (1-Down, 0-Running)
+# Represents the initial and previous assumed states of the node when this script starts (1-Down, 0-Running)
 NODE_DOWN="1"
+NODE_PREVIOUS_STATE=${NODE_DOWN}
 
 # Timestamp format for script output
 timestamp_format ()
@@ -32,8 +33,17 @@ timestamp_format ()
 
 # Main loop
 while [ true ]; do
+# Save last state of the node
+NODE_PREVIOUS_STATE=${NODE_DOWN}
+
 # Validate if node is down
 NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
+
+# If starting the node, wait a few seconds for log to change
+if [ "${NODE_PREVIOUS_STATE}" == "1" ] && [ "${NODE_DOWN}" == "0" ]; then
+	echo $(timestamp_format)"Waiting some time for node to start..."
+	sleep 10
+fi
 
 # If the node is up validate if there is enought log to make decisions, otherwise wait
 if [ "${NODE_DOWN}" == "0" ]; then
