@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/05/03
-# v1.2
+# Date: 2021/08/28
+# v1.2.2
 
 ## Optimised for:
-# Hive-Engine 1.3.0
+# Hive-Engine 1.5.2+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -21,8 +21,9 @@ PM2_NODE_NAME="prod-hivengwit"
 SIGNING_BLOCKS="0"
 # Represents the intention to register (1-Registering, 2-Unregistering)
 REGISTER="0"
-# Represents the initial assumed state of the node when this script starts (1-Down, 0-Running)
+# Represents the initial and previous assumed states of the node when this script starts (1-Down, 0-Running)
 NODE_DOWN="1"
+NODE_PREVIOUS_STATE=${NODE_DOWN}
 
 # Timestamp format for script output
 timestamp_format ()
@@ -32,8 +33,25 @@ timestamp_format ()
 
 # Main loop
 while [ true ]; do
+# Save last state of the node
+NODE_PREVIOUS_STATE=${NODE_DOWN}
+
 # Validate if node is down
 NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
+
+# If starting the node, wait a few seconds for log to change
+if [ "${NODE_PREVIOUS_STATE}" == "1" ] && [ "${NODE_DOWN}" == "0" ]; then
+	echo $(timestamp_format)"Waiting some time for node to start..."
+	sleep 10
+fi
+
+# If the node is up validate if there is enought log to make decisions, otherwise wait
+if [ "${NODE_DOWN}" == "0" ]; then
+	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ]; do
+		echo $(timestamp_format)"Waiting for log information..."
+		sleep 1
+	done
+fi
 
 # For the next two variables "BLOCKS_MISSING" and "TIMES_MISSING"
 # (TODO) - Fix the cases when logrotate starts a new file and there are no messages
@@ -66,6 +84,9 @@ TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_num
 
 # Update time
 CURRENT_TIME=`date --iso-8601=seconds`
+
+# Validate if node is down (again) to increase reaction due low IO log performance
+NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 
 # Validate sync status
 if [ "${NODE_DOWN}" == "1" ]; then
