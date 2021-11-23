@@ -2,8 +2,8 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/08/28
-# v1.2.2
+# Date: 2021/10/14
+# v1.2.3
 
 ## Optimised for:
 # Hive-Engine 1.5.2+
@@ -47,8 +47,8 @@ fi
 
 # If the node is up validate if there is enought log to make decisions, otherwise wait
 if [ "${NODE_DOWN}" == "0" ]; then
-	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ]; do
-		echo $(timestamp_format)"Waiting for log information..."
+	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ] || [ `tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep "blocks\ ahead" | wc -l` -lt 3  ]; do
+		echo $(timestamp_format)"Waiting for more log information..."
 		sleep 1
 	done
 fi
