@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/10/14
-# v1.2.3
+# Date: 2021/11/24
+# v1.2.4
 
 ## Optimised for:
-# Hive-Engine 1.5.2+
+# Hive-Engine 1.7.0+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -47,7 +47,7 @@ fi
 
 # If the node is up validate if there is enought log to make decisions, otherwise wait
 if [ "${NODE_DOWN}" == "0" ]; then
-	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ] || [ `tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep "blocks\ ahead" | wc -l` -lt 3  ]; do
+	while [ `tail -n 1000 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep "blocks\ ahead" | wc -l` -lt 2  ]; do
 		echo $(timestamp_format)"Waiting for more log information..."
 		sleep 1
 	done
@@ -98,9 +98,10 @@ elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
                 # No missed blocks, therefore we can be sure to continue signing or register
                 echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Node is stable and in sync!"
                 REGISTER="1"
-	elif [[ ( "${TIMES_MISSING}" == "1" ) || ( "${TIMES_MISSING}" == "2" ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
-		# Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
-		echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+	elif [[ ( ${TIMES_MISSING} -lt 5 ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
+                # Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
+                echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+
 	else
                 # If there are more than one message with missing blocks and still out of sync, then indicate to unregister
                 echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Node is unstable with: [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
@@ -124,5 +125,5 @@ elif [ "${SIGNING_BLOCKS}" == "1" ] && [ "${REGISTER}" == "0" ]; then
 fi
 
 # Scan frequency
-sleep 10
+sleep 5
 done
