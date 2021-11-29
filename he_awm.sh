@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/08/28
-# v1.2.2
+# Date: 2021/11/29
+# v1.2.5
 
 ## Optimised for:
-# Hive-Engine 1.5.2+
+# Hive-Engine 1.7.1+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -31,6 +31,35 @@ timestamp_format ()
         echo "[`date --iso-8601=seconds`] "
 }
 
+# Check state of the running chain and if in a fork, unregister and stop the node
+check_fork_monitor ()
+{
+	# Represents the state of the chain (0-onchain, 1-forked)
+	FORK_STATUS="0"
+	echo $(timestamp_format)"Fork monitor started..."
+	while [ true ]; do
+		# Scan every 15 minutes
+		sleep 900
+		echo $(timestamp_format)"Scanning for forks!"
+		SCAN_RESULT=`node find_divergent_block.js | grep divergent | wc -l`
+		echo $(timestamp_format)"Fork scan result: ${SCAN_RESULT}"
+		# If it finds at least one line with divergent, then we are in a fork
+		if [ ${SCAN_RESULT} -ge 1  ]; then
+			FORK_STATUS="1"
+			echo $(timestamp_format)"Fork detected, unregistering..."
+        		node witness_action.js unregister
+			echo $(timestamp_format)"Unregistration Broadcasted, stopping node(${PM2_NODE_NAME})..."
+			pm2 stop ${PM2_NODE_NAME}
+		else
+			# Do nothing and force update the local variable
+			FORK_STATUS="0"
+		fi
+	done
+}
+
+# Start the fork monitor in background
+check_fork_monitor &
+
 # Main loop
 while [ true ]; do
 # Save last state of the node
@@ -47,8 +76,8 @@ fi
 
 # If the node is up validate if there is enought log to make decisions, otherwise wait
 if [ "${NODE_DOWN}" == "0" ]; then
-	while [ `tail -n 1000 ${NODE_APP_LOG} | wc -l` -lt 500 ]; do
-		echo $(timestamp_format)"Waiting for log information..."
+	while [ `tail -n 1000 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep "blocks\ ahead" | wc -l` -lt 2  ]; do
+		echo $(timestamp_format)"Waiting for more log information..."
 		sleep 1
 	done
 fi
@@ -80,6 +109,7 @@ BLOCKS_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_nu
 
 # Search the log for X amount of streamer messages and count how many we were missing blocks
 # The bigger you set the tailed lines (-n) the higher number of messages you will get (higher requirements for being stable) 
+# Should be used with the same number of lines as the BLOCKS_MISSING variable. But is not mandatory!
 TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep -v "0\ blocks\ ahead"|wc -l`
 
 # Update time
@@ -98,16 +128,19 @@ elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
                 # No missed blocks, therefore we can be sure to continue signing or register
                 echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Node is stable and in sync!"
                 REGISTER="1"
-	elif [[ ( "${TIMES_MISSING}" == "1" ) || ( "${TIMES_MISSING}" == "2" ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
-		# Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
-		echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+	elif [[ ( ${TIMES_MISSING} -lt 5 ) ]] && [[ ( "${BLOCKS_MISSING}" == "1" ) || ( "${BLOCKS_MISSING}" == "0" ) ]]; then
+                # Let's assume that one or two times behind and up to 1 block missed is an evaluation zone A (no decisions)
+                echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Evaluation threshold... [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
+
 	else
                 # If there are more than one message with missing blocks and still out of sync, then indicate to unregister
                 echo $(timestamp_format)"Witness State[${SIGNING_BLOCKS}] Round[${CURRENT_ROUND}] - Node is unstable with: [${BLOCKS_MISSING}]BM [${TIMES_MISSING}]TM"
                 REGISTER="0"
 	fi
 else
-	echo $(timestamp_format)"Unknown error"
+	# When the log output is flooded with other messages and there is not enough lines parsed to capture the blocks ahead info
+	# If you experience too many of these messages, try to increase the number of lines parsed for the BLOCKS_MISSING variable (and the TIMES_MISSING too)
+	echo $(timestamp_format)"Could not parse blocks ahead field..."
 fi
 
 # (Un)Register witness depeding on signing status
@@ -124,5 +157,5 @@ elif [ "${SIGNING_BLOCKS}" == "1" ] && [ "${REGISTER}" == "0" ]; then
 fi
 
 # Scan frequency
-sleep 10
+sleep 5
 done
