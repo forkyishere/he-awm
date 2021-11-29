@@ -109,6 +109,7 @@ BLOCKS_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_nu
 
 # Search the log for X amount of streamer messages and count how many we were missing blocks
 # The bigger you set the tailed lines (-n) the higher number of messages you will get (higher requirements for being stable) 
+# Should be used with the same number of lines as the BLOCKS_MISSING variable. But is not mandatory!
 TIMES_MISSING=`tail -n 333 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep -v "0\ blocks\ ahead"|wc -l`
 
 # Update time
@@ -137,7 +138,9 @@ elif [ "${NODE_DOWN}" == "0" ] && [ "${BLOCKS_MISSING}" != "" ]; then
                 REGISTER="0"
 	fi
 else
-	echo $(timestamp_format)"Unknown error"
+	# When the log output is flooded with other messages and there is not enough lines parsed to capture the blocks ahead info
+	# If you experience too many of these messages, try to increase the number of lines parsed for the BLOCKS_MISSING variable (and the TIMES_MISSING too)
+	echo $(timestamp_format)"Could not parse blocks ahead field..."
 fi
 
 # (Un)Register witness depeding on signing status
