@@ -28,10 +28,11 @@ Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it
 # Features
  - Blockchain sync detection via `node_app.log` output
  - Automatic register or unregister witness via stability of the node (blocks behind)
-   1. Assumes 1 block behind as being acceptable as long there is no more than 2 repetitions (aka recovers quickly)
+   1. Assumes 1 block behind as being acceptable as long there is no more than 4 repetitions (configurable) - aka recovers quickly
    2. If the chain is more than 1 block ahead, unregister
    3. Once we are again in sync with zero sync problems for a couple seconds, register
 - Display messages when witness is scheduled for signing or signed a block
+- Fork detection and node unregister+shutdown
 
 # Feedback / Contacts
 Feel free to submit any feature requests/bugs via github or to contact me on HIVE via @forykw account.
