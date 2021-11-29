@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/11/24
-# v1.2.4
+# Date: 2021/11/29
+# v1.2.5
 
 ## Optimised for:
-# Hive-Engine 1.7.0+
+# Hive-Engine 1.7.1+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -30,6 +30,35 @@ timestamp_format ()
 {
         echo "[`date --iso-8601=seconds`] "
 }
+
+# Check state of the running chain and if in a fork, unregister and stop the node
+check_fork_monitor ()
+{
+	# Represents the state of the chain (0-onchain, 1-forked)
+	FORK_STATUS="0"
+	echo $(timestamp_format)"Fork monitor started..."
+	while [ true ]; do
+		# Scan every 15 minutes
+		sleep 900
+		echo $(timestamp_format)"Scanning for forks!"
+		SCAN_RESULT=`node find_divergent_block.js | grep divergent | wc -l`
+		echo $(timestamp_format)"Fork scan result: ${SCAN_RESULT}"
+		# If it finds at least one line with divergent, then we are in a fork
+		if [ ${SCAN_RESULT} -ge 1  ]; then
+			FORK_STATUS="1"
+			echo $(timestamp_format)"Fork detected, unregistering..."
+        		node witness_action.js unregister
+			echo $(timestamp_format)"Unregistration Broadcasted, stopping node(${PM2_NODE_NAME})..."
+			pm2 stop ${PM2_NODE_NAME}
+		else
+			# Do nothing and force update the local variable
+			FORK_STATUS="0"
+		fi
+	done
+}
+
+# Start the fork monitor in background
+check_fork_monitor &
 
 # Main loop
 while [ true ]; do
