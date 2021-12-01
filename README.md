@@ -7,6 +7,9 @@ Will get better over time.
 
 ## Disclaimer
 This script needs to be (potentially) modified if the Hive-Engine code changes, therefore always double check the `Optimised for:` comment section inside the script.
+The main focus is to allow a node to live without disrupting the network in case of problematic situations, hence it can unregister temporarily your witness or stop the node.
+Until a new flag is added (for dry run) make due deliegence before executing this script.
+Runnning this script will only take actions passively to what happens to your node log, in terms of node (un)registration and node stop/start status.
 
 ## `he_awm.sh`
 Name of the executable bash script that runs on the same folder of the HIVE-Engine witness code.
@@ -33,6 +36,7 @@ Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it
    3. Once we are again in sync with zero sync problems for a couple seconds, register
 - Display messages when witness is scheduled for signing or signed a block
 - Fork detection and node unregister+shutdown
+- Node recovery on false fork alarm (depends on `antiForkBufferMaxSize` and scan frequency) 
 
 # Feedback / Contacts
 Feel free to submit any feature requests/bugs via github or to contact me on HIVE via @forykw account.

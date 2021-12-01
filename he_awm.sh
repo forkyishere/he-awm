@@ -2,8 +2,8 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/11/29
-# v1.2.5
+# Date: 2021/12/01
+# v1.2.6
 
 ## Optimised for:
 # Hive-Engine 1.7.1+
@@ -35,24 +35,32 @@ timestamp_format ()
 check_fork_monitor ()
 {
 	# Represents the state of the chain (0-onchain, 1-forked)
-	FORK_STATUS="0"
+	# Represents previous state detected
+	PREV_STATUS=0
 	echo $(timestamp_format)"Fork monitor started..."
 	while [ true ]; do
-		# Scan every 15 minutes
-		sleep 900
+		# Scan every 60 seconds (increase this value if you don't won't too often scans)
+		sleep 60
 		echo $(timestamp_format)"Scanning for forks!"
+		# This currently targets https://api.hive-engine.com/rpc but you can change it to a different node with the flag "-n <rpc_node>"
 		SCAN_RESULT=`node find_divergent_block.js | grep divergent | wc -l`
 		echo $(timestamp_format)"Fork scan result: ${SCAN_RESULT}"
 		# If it finds at least one line with divergent, then we are in a fork
-		if [ ${SCAN_RESULT} -ge 1  ]; then
-			FORK_STATUS="1"
+		if [ ${SCAN_RESULT} -ge 1  ] && [ ${PREV_STATUS} -eq 0 ]; then
+			# We have potentially forked
 			echo $(timestamp_format)"Fork detected, unregistering..."
         		node witness_action.js unregister
 			echo $(timestamp_format)"Unregistration Broadcasted, stopping node(${PM2_NODE_NAME})..."
 			pm2 stop ${PM2_NODE_NAME}
+			PREV_STATUS=1
+		elif [ ${SCAN_RESULT} -eq 0  ] && [ ${PREV_STATUS} -eq 1 ]; then
+			# We have not actually forked and we can restart
+			echo $(timestamp_format)"Restarting node(${PM2_NODE_NAME})..."
+			pm2 start ${PM2_NODE_NAME}
+			PREV_STATUS=0
 		else
 			# Do nothing and force update the local variable
-			FORK_STATUS="0"
+			echo "" > /dev/null
 		fi
 	done
 }
