@@ -2,8 +2,8 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/12/01
-# v1.2.6
+# Date: 2021/12/27
+# v1.2.7
 
 ## Optimised for:
 # Hive-Engine 1.7.1+
@@ -24,6 +24,8 @@ REGISTER="0"
 # Represents the initial and previous assumed states of the node when this script starts (1-Down, 0-Running)
 NODE_DOWN="1"
 NODE_PREVIOUS_STATE=${NODE_DOWN}
+# Enable or disable fork detection (default: 1-Enabled)
+FORK_MONITOR_ENABLED="1"
 
 # Timestamp format for script output
 timestamp_format ()
@@ -37,36 +39,53 @@ check_fork_monitor ()
 	# Represents the state of the chain (0-onchain, 1-forked)
 	# Represents previous state detected
 	PREV_STATUS=0
+	# RPC Nodes to compare against
+	HE_RPC_NODES=("https://api2.hive-engine.com/rpc" "https://api.hive-engine.com/rpc")
+	# Number of RPC Nodes is defined by ${#HE_RPC_NODES[@]}
 	echo $(timestamp_format)"Fork monitor started..."
 	while [ true ]; do
 		# Scan every 60 seconds (increase this value if you don't won't too often scans)
 		sleep 60
+		# Reset the level of forking comparison for decision
+                FORK_DECISION=0
 		echo $(timestamp_format)"Scanning for forks!"
-		# This currently targets https://api.hive-engine.com/rpc but you can change it to a different node with the flag "-n <rpc_node>"
-		SCAN_RESULT=`node find_divergent_block.js | grep divergent | wc -l`
-		echo $(timestamp_format)"Fork scan result: ${SCAN_RESULT}"
-		# If it finds at least one line with divergent, then we are in a fork
-		if [ ${SCAN_RESULT} -ge 1  ] && [ ${PREV_STATUS} -eq 0 ]; then
-			# We have potentially forked
+		# Target nodes on HE_RPC_NODES array
+		for (( i=0; i<${#HE_RPC_NODES[@]}; i++ )); do
+		        # If it finds at least one line with divergent, then we are in a fork against that node
+			SCAN_RESULT=`node find_divergent_block_v4.js -n ${HE_RPC_NODES[${i}]} | grep divergent | wc -l`
+			# Update detected forks against all RPC nodes configured for scan
+			echo $(timestamp_format)"Fork scan result["$((${i}+1))"/${#HE_RPC_NODES[@]}]: ${SCAN_RESULT}"
+			if [ ${SCAN_RESULT} -ge 1 ]; then
+				((FORK_DECISION++))
+			fi
+		done
+		echo $(timestamp_format)"Fork scan decision weight[${#HE_RPC_NODES[@]}]: ${FORK_DECISION}"
+
+		# Act based on the decisions
+		if [ ${FORK_DECISION} -ge 2  ] && [ ${PREV_STATUS} -eq 0 ]; then
+			# We have potentially forked since all nodes reported forked status
 			echo $(timestamp_format)"Fork detected, unregistering..."
         		node witness_action.js unregister
 			echo $(timestamp_format)"Unregistration Broadcasted, stopping node(${PM2_NODE_NAME})..."
 			pm2 stop ${PM2_NODE_NAME}
 			PREV_STATUS=1
-		elif [ ${SCAN_RESULT} -eq 0  ] && [ ${PREV_STATUS} -eq 1 ]; then
-			# We have not actually forked and we can restart
+		elif [ ${FORK_DECISION} -lt 2  ] && [ ${PREV_STATUS} -eq 1 ]; then
+			# If we were forked previously and currently are not anymore for all nodes, then let's restart the node
+			# This also covers the situation the database might be restored, so you don't need to restart the monitor
 			echo $(timestamp_format)"Restarting node(${PM2_NODE_NAME})..."
 			pm2 start ${PM2_NODE_NAME}
 			PREV_STATUS=0
 		else
-			# Do nothing and force update the local variable
+			# Otherwise if the node had forked and stopped or is running fine, do nothing
 			echo "" > /dev/null
 		fi
 	done
 }
 
-# Start the fork monitor in background
+# Start the fork monitor in background if enabled
+if [ "${FORK_MONITOR_ENABLED}" == "1" ]; then
 check_fork_monitor &
+fi
 
 # Main loop
 while [ true ]; do
@@ -85,6 +104,11 @@ fi
 # If the node is up validate if there is enought log to make decisions, otherwise wait
 if [ "${NODE_DOWN}" == "0" ]; then
 	while [ `tail -n 1000 ${NODE_APP_LOG} | grep Streamer | grep head_block_number | grep "blocks\ ahead" | wc -l` -lt 2  ]; do
+		# While waiting, monitor if the node goes down
+		NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
+		if [ "${NODE_DOWN}" == "1" ]; then
+			break;
+		fi
 		echo $(timestamp_format)"Waiting for more log information..."
 		sleep 1
 	done
@@ -102,7 +126,7 @@ CURRENT_ROUND=`tail -n 1000 ${NODE_APP_LOG} | grep P2P | grep currentRound | tai
 # Find any recent <Round> witness messages
 # (TODO) - use another method as tail generates repeated messages (adjust tail lines for log history adjustment)
 WITNESS_INFO[0]=`tail -n 1000 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep scheduled | tail -n 1 | awk '{ print $5, $8, $9, $10, $11, $12" - Last log message ("$1 , $2")" }'`
-WITNESS_INFO[1]=`tail -n 1000 ${NODE_APP_LOG} | grep Blockchain | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | grep signed | tail -n 1 | awk '{ print $7, $8, $9" - Last log message ("$1 , $2")" }'`
+WITNESS_INFO[1]=`tail -n 1000 ${NODE_APP_LOG} | grep signed | grep ${WITNESS_NAME} | grep ${CURRENT_ROUND} | tail -n 1 | awk '{ print $7, $8, $9" - Last log message ("$1 , $2")" }'`
 # Print if there is any message
 if [ -n "${WITNESS_INFO[0]}" ]; then
 	echo $(timestamp_format)${WITNESS_INFO[0]}
