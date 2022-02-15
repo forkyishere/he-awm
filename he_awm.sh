@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2021/12/27
-# v1.2.7
+# Date: 2022/01/15
+# v1.2.8
 
 ## Optimised for:
-# Hive-Engine 1.7.1+
+# Hive-Engine 1.7.2+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
@@ -52,7 +52,7 @@ check_fork_monitor ()
 		# Target nodes on HE_RPC_NODES array
 		for (( i=0; i<${#HE_RPC_NODES[@]}; i++ )); do
 		        # If it finds at least one line with divergent, then we are in a fork against that node
-			SCAN_RESULT=`node find_divergent_block_v4.js -n ${HE_RPC_NODES[${i}]} | grep divergent | wc -l`
+			SCAN_RESULT=`node find_divergent_block.js -n ${HE_RPC_NODES[${i}]} | grep divergent | wc -l`
 			# Update detected forks against all RPC nodes configured for scan
 			echo $(timestamp_format)"Fork scan result["$((${i}+1))"/${#HE_RPC_NODES[@]}]: ${SCAN_RESULT}"
 			if [ ${SCAN_RESULT} -ge 1 ]; then
