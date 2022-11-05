@@ -28,6 +28,11 @@ Review the script contents and modify at your leasure any initial status or thre
 ## How to stop
 Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it)
 
+## Start with log and screen output
+```
+[your_hive_engine_witness_folder]> ./he_awm.sh 2>&1 | tee -a he_awm.log
+```
+
 # Features
  - Blockchain sync detection via `node_app.log` output
  - Automatic register or unregister witness via stability of the node (blocks behind)
@@ -36,7 +41,8 @@ Ctrl+C or kill the pid from the script (use `ps -ef | grep he_awm.sh` to find it
    3. Once we are again in sync with zero sync problems for a couple seconds, register
 - Display messages when witness is scheduled for signing or signed a block
 - Fork detection and node unregister+shutdown
-- Node recovery on false fork alarm (depends on `antiForkBufferMaxSize` and scan frequency) 
+- Node recovery on false fork alarm (depends on `antiForkBufferMaxSize` and scan frequency)
+- IPv6 scanning to guarantee witness communication (unregister if communication is lost)
 
 # Feedback / Contacts
 Feel free to submit any feature requests/bugs via github or to contact me on HIVE via @forykw account.
