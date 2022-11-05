@@ -40,7 +40,7 @@ check_fork_monitor ()
 	# Represents previous state detected
 	PREV_STATUS=0
 	# RPC Nodes to compare against
-	HE_RPC_NODES=("https://api2.hive-engine.com/rpc" "https://api.hive-engine.com/rpc")
+	HE_RPC_NODES=("https://api2.hive-engine.com/rpc" "https://api.hive-engine.com/rpc" "https://api.primersion.com" "https://engine.rishipanthee.com" "https://herpc.dtools.dev")
 	# Number of RPC Nodes is defined by ${#HE_RPC_NODES[@]}
 	echo $(timestamp_format)"Fork monitor started..."
 	while [ true ]; do
