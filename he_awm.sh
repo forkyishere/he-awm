@@ -44,8 +44,8 @@ check_fork_monitor ()
 	# Number of RPC Nodes is defined by ${#HE_RPC_NODES[@]}
 	echo $(timestamp_format)"Fork monitor started..."
 	while [ true ]; do
-		# Scan every 60 seconds (increase this value if you don't won't too often scans)
-		sleep 60
+		# Scan every 300 seconds (increase this value if you don't won't too often scans)
+		sleep 300
 		# Reset the level of forking comparison for decision
                 FORK_DECISION=0
 		echo $(timestamp_format)"Scanning for forks!"
