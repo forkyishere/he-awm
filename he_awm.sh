@@ -15,6 +15,9 @@ NODE_APP_LOG="node_app.log"
 WITNESS_NAME="atexoras.witness"
 # Name of the PM2 process that started the node (app.js)
 PM2_NODE_NAME="prod-hivengwit"
+# IPv6 List of IPs to ping (add as many as you can, to ensure real comms verification)
+IP6_LIST=("2a02:c206:2074:1295::1" "2602:fb95:1::5")
+
 
 ## State variables
 # Represents the witness registered state (0-UnRegistered, 1-Registered)
@@ -26,6 +29,9 @@ NODE_DOWN="1"
 NODE_PREVIOUS_STATE=${NODE_DOWN}
 # Enable or disable fork detection (default: 1-Enabled)
 FORK_MONITOR_ENABLED="1"
+# IPv6 ping status (0-Failing, 1-OK)
+PREV_PING6_STATUS=1
+
 
 # Timestamp format for script output
 timestamp_format ()
@@ -80,6 +86,32 @@ check_fork_monitor ()
 			echo "" > /dev/null
 		fi
 	done
+}
+
+
+check_ipv6_comms ()
+{
+	PING6_COMMAND="ping -6 -c 1 -W 2"
+	PING_COUNTER=0
+	# Go through the list and ping each IPv6 once (adding to the counter)
+	for (( i=0; i<${#IP6_LIST[@]}; i++ )); do
+		PING_RESULT=`${PING6_COMMAND} ${IP6_LIST[${i}]} | grep icmp_seq |wc -l`
+                if [ ${PING_RESULT} -ge 1 ]; then
+			((PING_COUNTER++))
+                fi
+	done
+
+	# Check if all pings succeeded and change status accordingly
+	if [ ${PING_COUNTER} == 0 ]; then
+		PREV_PING6_STATUS=0
+	elif [ ${PING_COUNTER} -gt 0 ] && [ ${PREV_PING6_STATUS} -eq 0 ]; then
+		PREV_PING6_STATUS=1
+		echo $(timestamp_format)"check_ipv6_comms recovered"
+	elif [ ${PING_COUNTER} -gt 0 ] && [ ${PING_COUNTER} -lt ${#IP6_LIST[@]} ]; then
+		echo $(timestamp_format)"Sucessfull pings: ${PING_COUNTER}/${#IP6_LIST[@]}"
+	else
+		echo "" > /dev/null
+	fi
 }
 
 # Start the fork monitor in background if enabled
@@ -175,17 +207,22 @@ else
 	echo $(timestamp_format)"Could not parse blocks ahead field..."
 fi
 
-# (Un)Register witness depeding on signing status
-if [ "${SIGNING_BLOCKS}" == "0" ] && [ "${REGISTER}" == "1" ]; then
+# Update variables
+check_ipv6_comms
+
+# (Un)Register witness depeding on signals status
+if [ "${SIGNING_BLOCKS}" == "0" ] && [ "${REGISTER}" == "1" ] && [ ${PREV_PING6_STATUS} -eq 1 ]; then
 	echo $(timestamp_format)"Registering Witness"
 	SIGNING_BLOCKS="1"
 	node witness_action.js register
 	echo $(timestamp_format)"Registration Broadcasted"
-elif [ "${SIGNING_BLOCKS}" == "1" ] && [ "${REGISTER}" == "0" ]; then
+elif [ "${SIGNING_BLOCKS}" == "1" ] && ( [ "${REGISTER}" == "0" ] || [ ${PREV_PING6_STATUS} -eq 0 ] ); then
 	echo $(timestamp_format)"Unregistering Witness"
 	SIGNING_BLOCKS="0"
 	node witness_action.js unregister
 	echo $(timestamp_format)"Unregistration Broadcasted"
+else
+	echo "" > /dev/null
 fi
 
 # Scan frequency
