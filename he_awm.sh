@@ -98,7 +98,7 @@ NODE_DOWN=`pm2 list | grep ${PM2_NODE_NAME} | grep stopped | wc -l`
 # If starting the node, wait a few seconds for log to change
 if [ "${NODE_PREVIOUS_STATE}" == "1" ] && [ "${NODE_DOWN}" == "0" ]; then
 	echo $(timestamp_format)"Waiting some time for node to start..."
-	sleep 10
+	sleep 30
 fi
 
 # If the node is up validate if there is enought log to make decisions, otherwise wait
