@@ -2,11 +2,11 @@
 # Program: HIVE-Engine Auto Witness Monitor (HE-AWM)
 # Description: Manages the sync of the node and the witness registration status/notifications
 # Author: forykw
-# Date: 2022/01/15
-# v1.2.8
+# Date: 2022/11/05
+# v1.3.0
 
 ## Optimised for:
-# Hive-Engine 1.7.2+
+# Hive-Engine 1.8.2+
 
 ## Requirements
 # Log name output from the hive-engine node (app.js)
