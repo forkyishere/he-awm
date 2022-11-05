@@ -17,9 +17,9 @@ WITNESS_NAME="atexoras.witness"
 PM2_NODE_NAME="prod-hivengwit"
 
 ## State variables
-# Represents the witness registered state (1-Registered, 2-Unregistered)
+# Represents the witness registered state (0-UnRegistered, 1-Registered)
 SIGNING_BLOCKS="0"
-# Represents the intention to register (1-Registering, 2-Unregistering)
+# Represents the intention to register (0-UnRegistering, 1-Registering)
 REGISTER="0"
 # Represents the initial and previous assumed states of the node when this script starts (1-Down, 0-Running)
 NODE_DOWN="1"
