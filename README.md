@@ -1,11 +1,13 @@
 # HIVE-Engine Auto Witness Monitor (HE-AWM)
 
-This is a bash script to automate the Hive-Engine Witness node registration status and avoid missed blocks.
 
-Still very early Alpha kind of stuff, so treat it accordantly.
-Will get better over time.
+> _This script is a Bash script for monitoring a Hive-Engine witness node. The script is designed to manage the synchronization of the node, as well as the registration status of the witness account. The script also includes a "fork monitor" which checks for potential forking on the chain and takes appropriate action if a fork is detected._
+
+🦾 automatic script description via https://chat.openai.com/chat
 
 ## Disclaimer
+Without any guarantees and at your own responsability, so treat it accordantly. Will get better over time.
+
 This script needs to be (potentially) modified if the Hive-Engine code changes, therefore always double check the `Optimised for:` comment section inside the script.
 The main focus is to allow a node to live without disrupting the network in case of problematic situations, hence it can unregister temporarily your witness or stop the node.
 Until a new flag is added (for dry run) make due deliegence before executing this script.
